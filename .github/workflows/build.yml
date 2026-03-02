@@ -1,0 +1,40 @@
+name: Auto Convert OmniBox
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"   # 每6小时自动运行
+  workflow_dispatch:        # 允许手动运行
+  push:
+    paths:
+      - "pool.json"         # 修改源池时自动触发
+
+permissions:
+  contents: write           # 关键：允许写入仓库
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    concurrency:
+      group: omnibox-auto
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run convert script
+        run: node convert.mjs
+
+      - name: Auto commit generated files
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "auto update"
+          file_pattern: "omnibox.json cms.json report.json"
